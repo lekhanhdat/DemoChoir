@@ -1,0 +1,186 @@
+import { FilePdfOutlined, FolderAddOutlined, ReadOutlined } from '@ant-design/icons'
+import {
+  Alert,
+  Button,
+  Drawer,
+  Empty,
+  Form,
+  Input,
+  List,
+  Space,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+  message,
+} from 'antd'
+import type { TableColumnsType } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { ApiError, createSongBook, getSongBooks, getSongs } from '../api/client'
+import type { Song, SongBook } from '../types'
+
+interface SongBookFormValues {
+  name: string
+}
+
+export default function SongBooksPage() {
+  const [songBooks, setSongBooks] = useState<SongBook[]>([])
+  const [songs, setSongs] = useState<Song[]>([])
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [selectedSongBook, setSelectedSongBook] = useState<SongBook | null>(null)
+  const [form] = Form.useForm<SongBookFormValues>()
+
+  const loadData = async () => {
+    setLoading(true)
+    setErrorMessage(null)
+    try {
+      const [booksResponse, songsResponse] = await Promise.all([getSongBooks(), getSongs()])
+      setSongBooks(booksResponse)
+      setSongs(songsResponse)
+    } catch (error) {
+      const messageText =
+        error instanceof ApiError ? error.message : 'Không thể tải dữ liệu tập sách.'
+      setErrorMessage(messageText)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadData()
+  }, [])
+
+  const songsByBookId = useMemo(() => {
+    const map = new Map<string, Song[]>()
+    for (const song of songs) {
+      const current = map.get(song.songBookId) || []
+      current.push(song)
+      map.set(song.songBookId, current)
+    }
+    return map
+  }, [songs])
+
+  const handleCreateSongBook = async (values: SongBookFormValues) => {
+    setSubmitting(true)
+    try {
+      const created = await createSongBook({ name: values.name.trim() })
+      setSongBooks((previous) => [created, ...previous])
+      form.resetFields()
+      message.success('Đã thêm tập sách mới.')
+    } catch (error) {
+      const messageText =
+        error instanceof ApiError ? error.message : 'Không thể tạo tập sách. Vui lòng thử lại.'
+      message.error(messageText)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const columns: TableColumnsType<SongBook> = [
+    {
+      title: 'Tên tập sách',
+      dataIndex: 'name',
+      key: 'name',
+      render: (value: string) => <Typography.Text strong>{value}</Typography.Text>,
+    },
+    {
+      title: 'Số bài hát',
+      key: 'songCount',
+      render: (_, book) => <Tag color="gold">{songsByBookId.get(book.id)?.length || 0}</Tag>,
+    },
+    {
+      title: 'Xem bài trong tập',
+      key: 'viewSongs',
+      render: (_, book) => (
+        <Button icon={<ReadOutlined />} onClick={() => setSelectedSongBook(book)}>
+          Xem bài
+        </Button>
+      ),
+    },
+  ]
+
+  const songsInSelectedBook = selectedSongBook ? songsByBookId.get(selectedSongBook.id) || [] : []
+
+  return (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <div className="section-surface">
+        <Typography.Title level={3}>Tập sách</Typography.Title>
+        <Form<SongBookFormValues>
+          layout="inline"
+          form={form}
+          onFinish={handleCreateSongBook}
+          requiredMark={false}
+        >
+          <Form.Item
+            label="Tên tập sách"
+            name="name"
+            rules={[{ required: true, message: 'Vui lòng nhập tên tập sách.' }]}
+            style={{ flex: 1, minWidth: 280 }}
+          >
+            <Input placeholder="Ví dụ: Thánh ca mùa vọng" />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" icon={<FolderAddOutlined />} htmlType="submit" loading={submitting}>
+              Thêm tập sách mới
+            </Button>
+          </Form.Item>
+        </Form>
+      </div>
+
+      <div className="section-surface">
+        {errorMessage && <Alert type="error" showIcon message={errorMessage} style={{ marginBottom: 16 }} />}
+
+        {loading ? (
+          <div className="center-content">
+            <Spin />
+          </div>
+        ) : (
+          <Table<SongBook>
+            rowKey="id"
+            dataSource={songBooks}
+            columns={columns}
+            pagination={{ pageSize: 8, showSizeChanger: false }}
+            locale={{ emptyText: <Empty description="Chưa có tập sách nào" /> }}
+            onRow={(record) => ({
+              onClick: () => setSelectedSongBook(record),
+              style: { cursor: 'pointer' },
+            })}
+          />
+        )}
+      </div>
+
+      <Drawer
+        title={selectedSongBook ? `Bài hát trong tập: ${selectedSongBook.name}` : 'Bài hát trong tập'}
+        width={460}
+        open={Boolean(selectedSongBook)}
+        onClose={() => setSelectedSongBook(null)}
+      >
+        {songsInSelectedBook.length === 0 ? (
+          <Empty description="Tập sách này chưa có bài hát." />
+        ) : (
+          <List
+            itemLayout="vertical"
+            dataSource={songsInSelectedBook}
+            renderItem={(song) => (
+              <List.Item
+                key={song.id}
+                extra={
+                  song.linkPdf ? (
+                    <a href={song.linkPdf} target="_blank" rel="noreferrer">
+                      <FilePdfOutlined /> Mở PDF
+                    </a>
+                  ) : null
+                }
+              >
+                <List.Item.Meta title={song.title} description={song.firstLine || 'Không có câu đầu'} />
+                <Typography.Text>Tác giả: {song.author}</Typography.Text>
+              </List.Item>
+            )}
+          />
+        )}
+      </Drawer>
+    </Space>
+  )
+}
