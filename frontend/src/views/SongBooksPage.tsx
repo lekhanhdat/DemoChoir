@@ -1,21 +1,8 @@
-import { FilePdfOutlined, FolderAddOutlined, ReadOutlined } from '@ant-design/icons'
-import {
-  Alert,
-  Button,
-  Drawer,
-  Empty,
-  Form,
-  Input,
-  List,
-  Space,
-  Spin,
-  Table,
-  Tag,
-  Typography,
-  message,
-} from 'antd'
+import { FolderAddOutlined, ReadOutlined } from '@ant-design/icons'
+import { Alert, Button, Empty, Form, Input, Space, Spin, Table, Tag, Typography, message } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ApiError, createSongBook, getSongBooks, getSongs } from '../api/client'
 import type { Song, SongBook } from '../types'
 
@@ -29,8 +16,8 @@ export default function SongBooksPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [selectedSongBook, setSelectedSongBook] = useState<SongBook | null>(null)
   const [form] = Form.useForm<SongBookFormValues>()
+  const navigate = useNavigate()
 
   const loadData = async () => {
     setLoading(true)
@@ -94,14 +81,15 @@ export default function SongBooksPage() {
       title: 'Xem bài trong tập',
       key: 'viewSongs',
       render: (_, book) => (
-        <Button icon={<ReadOutlined />} onClick={() => setSelectedSongBook(book)}>
+        <Button
+          icon={<ReadOutlined />}
+          onClick={() => navigate(`/songs?songBookId=${encodeURIComponent(book.id)}`)}
+        >
           Xem bài
         </Button>
       ),
     },
   ]
-
-  const songsInSelectedBook = selectedSongBook ? songsByBookId.get(selectedSongBook.id) || [] : []
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -144,43 +132,12 @@ export default function SongBooksPage() {
             pagination={{ pageSize: 8, showSizeChanger: false }}
             locale={{ emptyText: <Empty description="Chưa có tập sách nào" /> }}
             onRow={(record) => ({
-              onClick: () => setSelectedSongBook(record),
+              onClick: () => navigate(`/songs?songBookId=${encodeURIComponent(record.id)}`),
               style: { cursor: 'pointer' },
             })}
           />
         )}
       </div>
-
-      <Drawer
-        title={selectedSongBook ? `Bài hát trong tập: ${selectedSongBook.name}` : 'Bài hát trong tập'}
-        width={460}
-        open={Boolean(selectedSongBook)}
-        onClose={() => setSelectedSongBook(null)}
-      >
-        {songsInSelectedBook.length === 0 ? (
-          <Empty description="Tập sách này chưa có bài hát." />
-        ) : (
-          <List
-            itemLayout="vertical"
-            dataSource={songsInSelectedBook}
-            renderItem={(song) => (
-              <List.Item
-                key={song.id}
-                extra={
-                  song.linkPdf ? (
-                    <a href={song.linkPdf} target="_blank" rel="noreferrer">
-                      <FilePdfOutlined /> Mở PDF
-                    </a>
-                  ) : null
-                }
-              >
-                <List.Item.Meta title={song.title} description={song.firstLine || 'Không có câu đầu'} />
-                <Typography.Text>Tác giả: {song.author}</Typography.Text>
-              </List.Item>
-            )}
-          />
-        )}
-      </Drawer>
     </Space>
   )
 }

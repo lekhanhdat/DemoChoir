@@ -210,6 +210,9 @@ Route đề xuất: `/songs`
   - [ ] Tập sách.
   - [ ] Link PDF.
 - [ ] Có ô tìm nhanh theo tên bài hát hoặc câu đầu.
+- [ ] Có 2 filter ngay dưới ô tìm nhanh:
+  - [ ] Filter theo tác giả.
+  - [ ] Filter theo tập sách.
 - [ ] Tái sử dụng helper search normalize từ page chính.
 - [ ] Không hiển thị nút sửa, xóa mềm, trạng thái, activity log.
 - [ ] Nếu chưa có bài hát, hiển thị Ant Design `Empty` với nội dung ngắn: `Chưa có bài hát nào`.
@@ -233,13 +236,7 @@ Route đề xuất: `/song-books`
 - [ ] Mỗi dòng tập sách hiển thị:
   - [ ] Tên tập sách.
   - [ ] Số bài hát thuộc tập đó.
-- [ ] Khi bấm vào một tập sách, hiển thị danh sách bài hát thuộc tập đó bằng drawer hoặc panel bên phải.
-- [ ] Ưu tiên Ant Design `Drawer` cho danh sách bài hát trong tập để triển khai nhanh và đồng bộ.
-- [ ] Danh sách bài hát trong tập chỉ cần:
-  - [ ] Tên bài hát.
-  - [ ] Câu đầu.
-  - [ ] Tác giả.
-  - [ ] Link PDF.
+- [ ] Khi bấm `Xem bài` ở một tập sách, chuyển sang trang `/songs` và tự động filter theo tập sách đó.
 - [ ] Tập sách mới phải xuất hiện trong dropdown chọn sách ở form thêm bài hát.
 - [ ] Không cần sửa/xóa/archive tập sách trong demo.
 
@@ -264,84 +261,93 @@ Route đề xuất: `/song-books`
 
 ### Bước 1: Khởi tạo mono-repo FE/BE
 
-- [ ] Tạo folder `frontend/` cho React app.
-- [ ] Tạo React app bằng Vite trong `frontend/`.
-- [ ] Cài React Router.
-- [ ] Cài Ant Design và icon package: `antd`, `@ant-design/icons`.
-- [ ] Import `antd/dist/reset.css` trong entry app.
-- [ ] Tạo folder `backend/` cho FastAPI app.
-- [ ] Tạo `backend/app.py` hoặc `backend/index.py` với `app = FastAPI()`.
-- [ ] Tạo `backend/requirements.txt` hoặc `backend/pyproject.toml`.
-- [ ] Cài package backend: `fastapi`, `uvicorn`, `python-dotenv`, `httpx`.
+- [x] Tạo folder `frontend/` cho React app.
+- [x] Tạo React app bằng Vite trong `frontend/`.
+- [x] Cài React Router.
+- [x] Cài Ant Design và icon package: `antd`, `@ant-design/icons`.
+- [x] Import `antd/dist/reset.css` trong entry app.
+- [x] Tạo folder `backend/` cho FastAPI app.
+- [x] Tạo `backend/app.py` hoặc `backend/index.py` với `app = FastAPI()`.
+- [x] Tạo `backend/requirements.txt` hoặc `backend/pyproject.toml`.
+- [x] Cài package backend: `fastapi`, `uvicorn`, `python-dotenv`, `httpx`.
 
 ### Bước 2: Chạy backend trước với mock adapter
 
-- [ ] Tạo endpoint health check: `GET /api/health`.
-- [ ] Tạo `MockDataAdapter` chứa dữ liệu mẫu trong memory hoặc file seed nội bộ.
-- [ ] Tạo API đọc danh sách tập sách: `GET /api/song-books`.
-- [ ] Tạo API tạo tập sách: `POST /api/song-books`.
-- [ ] Tạo API đọc danh sách bài hát: `GET /api/songs`.
-- [ ] Tạo API tạo bài hát: `POST /api/songs`.
-- [ ] Test từng endpoint bằng REST client khi chưa có NocoDB.
-- [ ] Ghi chú rõ: mock/in-memory chỉ dùng để phát triển local, không dùng làm data production.
+- [x] Tạo endpoint health check: `GET /api/health`.
+- [x] Tạo `MockDataAdapter` chứa dữ liệu mẫu trong memory hoặc file seed nội bộ.
+- [x] Tạo API đọc danh sách tập sách: `GET /api/song-books`.
+- [x] Tạo API tạo tập sách: `POST /api/song-books`.
+- [x] Tạo API đọc danh sách bài hát: `GET /api/songs`.
+- [x] Tạo API tạo bài hát: `POST /api/songs`.
+- [x] Test từng endpoint bằng REST client khi chưa có NocoDB.
+- [x] Ghi chú rõ: mock/in-memory chỉ dùng để phát triển local, không dùng làm data production.
 
 ### Bước 3: Làm app shell và login demo
 
-- [ ] Tạo các route rỗng: `/login`, `/`, `/songs`, `/song-books`.
-- [ ] Tạo app shell cơ bản cho các route sau login.
-- [ ] Tạo UI login bằng Ant Design `Form`, `Input.Password`, `Button`, `Alert`.
-- [ ] Validate username/password hardcode.
-- [ ] Lưu trạng thái login vào `localStorage`.
-- [ ] Tạo route guard cho các page chính.
-- [ ] Tạo logout trong header.
+- [x] Tạo các route rỗng: `/login`, `/`, `/songs`, `/song-books`.
+- [x] Tạo app shell cơ bản cho các route sau login.
+- [x] Tạo UI login bằng Ant Design `Form`, `Input.Password`, `Button`, `Alert`.
+- [x] Validate username/password hardcode.
+- [x] Lưu trạng thái login vào `localStorage`.
+- [x] Tạo route guard cho các page chính.
+- [x] Tạo logout trong header.
 
 ### Bước 4: Nối frontend với FastAPI
 
-- [ ] Tạo file service/API client phía frontend.
-- [ ] Cấu hình `VITE_API_BASE_URL`.
-- [ ] Implement hàm `getSongs`.
-- [ ] Implement hàm `createSong`.
-- [ ] Implement hàm `getSongBooks`.
-- [ ] Implement hàm `createSongBook`.
-- [ ] Thêm trạng thái loading/error cho từng page.
-- [ ] Chạy song song frontend và backend local để xác nhận FE gọi được BE.
+- [x] Tạo file service/API client phía frontend.
+- [x] Cấu hình `VITE_API_BASE_URL`.
+- [x] Implement hàm `getSongs`.
+- [x] Implement hàm `createSong`.
+- [x] Implement hàm `getSongBooks`.
+- [x] Implement hàm `createSongBook`.
+- [x] Thêm trạng thái loading/error cho từng page.
+- [x] Chạy song song frontend và backend local để xác nhận FE gọi được BE.
 
 ### Bước 5: Làm page Tra cứu & thêm
 
-- [ ] Load bài hát và tập sách khi vào page.
-- [ ] Làm helper normalize tiếng Việt cho search không dấu.
-- [ ] Làm danh sách kết quả search bằng Ant Design `Table` hoặc `List`.
-- [ ] Làm form thêm bài hát 5 trường bằng Ant Design `Form`.
-- [ ] Validate form.
-- [ ] Gửi API tạo bài hát.
-- [ ] Refresh hoặc cập nhật state sau khi tạo thành công.
+- [x] Load bài hát và tập sách khi vào page.
+- [x] Làm helper normalize tiếng Việt cho search không dấu.
+- [x] Làm danh sách kết quả search bằng Ant Design `Table` hoặc `List`.
+- [x] Làm form thêm bài hát 5 trường bằng Ant Design `Form`.
+- [x] Validate form.
+- [x] Gửi API tạo bài hát.
+- [x] Refresh hoặc cập nhật state sau khi tạo thành công.
 
 ### Bước 6: Làm page Bài hát
 
-- [ ] Load danh sách bài hát.
-- [ ] Hiển thị bảng chỉ xem bằng Ant Design `Table`.
-- [ ] Thêm ô tìm nhanh.
-- [ ] Xử lý empty state và loading state.
+- [x] Load danh sách bài hát.
+- [x] Hiển thị bảng chỉ xem bằng Ant Design `Table`.
+- [x] Thêm ô tìm nhanh.
+- [x] Thêm filter theo tác giả và tập sách ngay dưới ô tìm.
+- [x] Xử lý empty state và loading state.
 
 ### Bước 7: Làm page Tập sách
 
-- [ ] Load danh sách tập sách và bài hát.
-- [ ] Hiển thị form thêm tập sách bằng Ant Design `Form`.
-- [ ] Hiển thị số bài hát theo từng tập.
-- [ ] Làm Ant Design `Drawer` xem bài hát trong tập.
-- [ ] Đảm bảo tập sách mới có thể dùng khi thêm bài hát.
+- [x] Load danh sách tập sách và bài hát.
+- [x] Hiển thị form thêm tập sách bằng Ant Design `Form`.
+- [x] Hiển thị số bài hát theo từng tập.
+- [x] Bấm `Xem bài` sẽ điều hướng qua `/songs` kèm query param filter theo tập sách.
+- [x] Đảm bảo tập sách mới có thể dùng khi thêm bài hát.
 
 ### Bước 8: Dọn UI và nội dung
 
-- [ ] Đối chiếu UI với recommendation từ `ui-ux-pro-max`.
-- [ ] Đảm bảo chỉ dùng Ant Design làm UI library chính.
-- [ ] Xóa hoặc không tạo các UI ngoài scope.
-- [ ] Kiểm tra toàn bộ copy tiếng Việt.
-- [ ] Kiểm tra link PDF mở được trong tab mới nếu có URL.
+- [x] Đối chiếu UI với recommendation từ `ui-ux-pro-max`.
+- [x] Đảm bảo chỉ dùng Ant Design làm UI library chính.
+- [x] Xóa hoặc không tạo các UI ngoài scope.
+- [x] Kiểm tra toàn bộ copy tiếng Việt.
+- [x] Kiểm tra link PDF mở được trong tab mới nếu có URL.
 - [ ] Kiểm tra layout không vỡ ở desktop và mobile cơ bản.
 
 ### Bước 9: Setup NocoDB Cloud sau khi FE/BE chạy ổn
 
+- [ ] (Phía bạn) Chốt dùng NocoDB Cloud cho giai đoạn tiếp theo.
+- [ ] (Phía bạn) Tạo sẵn 2 bảng NocoDB `SongBooks`, `Songs` đúng field tối thiểu.
+- [ ] (Phía bạn) Cung cấp cấu hình:
+  - [ ] `NOCODB_BASE_URL`
+  - [ ] `NOCODB_API_TOKEN`
+  - [ ] `NOCODB_SONG_BOOKS_ENDPOINT` hoặc `NOCODB_SONG_BOOKS_TABLE_ID`
+  - [ ] `NOCODB_SONGS_ENDPOINT` hoặc `NOCODB_SONGS_TABLE_ID`
+- [ ] (Phía bạn) Xác nhận CORS origin cần mở thêm (nếu có frontend staging).
 - [ ] Tạo NocoDB Cloud workspace/base.
 - [ ] Tạo 2 bảng `Songs`, `SongBooks`.
 - [ ] Tạo đúng các field tối thiểu như phần Setup NocoDB Cloud.
@@ -351,14 +357,15 @@ Route đề xuất: `/song-books`
 
 ### Bước 10: Đổi backend từ mock sang NocoDB
 
-- [ ] Tạo `NocoDBDataAdapter`.
-- [ ] Map response NocoDB về model chuẩn `Song` và `SongBook`.
-- [ ] Đổi config backend để chọn adapter bằng env, ví dụ `DATA_ADAPTER=mock` hoặc `DATA_ADAPTER=nocodb`.
+- [x] Tạo `NocoDBDataAdapter`.
+- [x] Map response NocoDB về model chuẩn `Song` và `SongBook`.
+- [x] Đổi config backend để chọn adapter bằng env, ví dụ `DATA_ADAPTER=mock` hoặc `DATA_ADAPTER=nocodb`.
 - [ ] Test lại 4 API backend với NocoDB Cloud.
 - [ ] Đảm bảo frontend không cần đổi code khi backend đổi adapter.
 
 ### Bước 11: Deploy FE và BE lên Vercel
 
+- [ ] (Phía bạn) Cung cấp quyền/project info Vercel để triển khai.
 - [ ] Tạo Vercel Project cho `backend/`.
 - [ ] Cấu hình backend env vars trên Vercel: `NOCODB_BASE_URL`, `NOCODB_API_TOKEN`, table id/endpoint cần thiết.
 - [ ] Deploy backend và test `GET /api/health`.
@@ -368,11 +375,11 @@ Route đề xuất: `/song-books`
 
 ### Bước 12: Validation và README
 
-- [ ] Chạy lint nếu đã cấu hình.
-- [ ] Chạy build frontend.
-- [ ] Chạy backend local và test health check.
+- [x] Chạy lint nếu đã cấu hình.
+- [x] Chạy build frontend.
+- [x] Chạy backend local và test health check.
 - [ ] Smoke test đầy đủ các luồng trong checklist QA.
-- [ ] Cập nhật README với cách chạy frontend, backend, cấu hình NocoDB và deploy Vercel.
+- [x] Cập nhật README với cách chạy frontend, backend, cấu hình NocoDB và deploy Vercel.
 
 ## QA demo nhanh
 
