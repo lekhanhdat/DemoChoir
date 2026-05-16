@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import os
 from dataclasses import dataclass
@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 
 @dataclass
 class Settings:
-    data_adapter: str
     cors_allowed_origins: list[str]
     nocodb_base_url: str | None
     nocodb_api_token: str | None
@@ -16,10 +15,6 @@ class Settings:
     nocodb_song_books_endpoint: str | None
     nocodb_songs_table_id: str | None
     nocodb_song_books_table_id: str | None
-
-    @property
-    def normalized_data_adapter(self) -> str:
-        return self.data_adapter.lower().strip()
 
 
 def _env(key: str) -> str | None:
@@ -37,7 +32,6 @@ def load_settings() -> Settings:
     origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
     return Settings(
-        data_adapter=_env("DATA_ADAPTER") or "mock",
         cors_allowed_origins=origins,
         nocodb_base_url=_env("NOCODB_BASE_URL"),
         nocodb_api_token=_env("NOCODB_API_TOKEN"),

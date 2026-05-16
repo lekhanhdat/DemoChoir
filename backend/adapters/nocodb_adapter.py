@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import re
 from typing import Any
@@ -53,12 +53,34 @@ class NocoDBDataAdapter:
     def list_song_books(self) -> list[SongBook]:
         payload = self._request_json("GET", self._song_books_endpoint)
         records = self._extract_records(payload)
-        return [self._to_song_book(record) for record in records]
+        song_books: list[SongBook] = []
+        invalid_records = 0
+        for record in records:
+            try:
+                song_books.append(self._to_song_book(record))
+            except RuntimeError:
+                invalid_records += 1
+
+        if invalid_records > 0:
+            raise RuntimeError(
+                "Dữ liệu bảng SongBooks không hợp lệ. Cần đủ 2 field songBookId và name."
+            )
+
+        return song_books
 
     def create_song_book(self, payload: SongBookCreateRequest) -> SongBook:
-        response = self._request_json("POST", self._song_books_endpoint, {"name": payload.name})
-        record = self._extract_single_record(response)
-        return self._to_song_book(record)
+        response = self._request_json(
+            "POST",
+            self._song_books_endpoint,
+            {"songBookId": payload.songBookId, "name": payload.name},
+        )
+        try:
+            record = self._extract_single_record(response)
+            return self._to_song_book(record)
+        except RuntimeError as exc:
+            raise RuntimeError(
+                "Không thể map SongBook theo schema mới. Hãy kiểm tra bảng SongBooks có field songBookId và name."
+            ) from exc
 
     def list_songs(self) -> list[Song]:
         payload = self._request_json("GET", self._songs_endpoint)
@@ -69,50 +91,32 @@ class NocoDBDataAdapter:
                 songs.append(self._to_song(record))
             except RuntimeError:
                 continue
-        song_book_name_by_id = {song_book.id: song_book.name for song_book in self.list_song_books()}
-        return [
-            song.model_copy(
-                update={
-                    "songBookNameSnapshot": song_book_name_by_id.get(
-                        song.songBookId, song.songBookNameSnapshot
-                    )
-                }
-            )
-            for song in songs
-        ]
+        return songs
 
     def create_song(self, payload: SongCreateRequest) -> Song:
-        selected_song_book = next(
-            (song_book for song_book in self.list_song_books() if song_book.id == payload.songBookId),
-            None,
+        song_book_exists = any(
+            song_book.songBookId == payload.songBookId for song_book in self.list_song_books()
         )
-        if selected_song_book is None:
+        if not song_book_exists:
             raise ValueError("Không tìm thấy tập sách đã chọn.")
 
-        post_body = {
+        base_post_body = {
             "title": payload.title,
             "firstLine": payload.firstLine or "",
             "author": payload.author,
             "songBookId": payload.songBookId,
-            "songBookNameSnapshot": selected_song_book.name,
             "linkPdf": payload.linkPdf,
         }
+
         last_error: RuntimeError | None = None
         for page_field_name in ("pageNumber", "soTrang", "page"):
             try:
                 response = self._request_json(
                     "POST",
                     self._songs_endpoint,
-                    {**post_body, page_field_name: payload.pageNumber},
+                    {**base_post_body, page_field_name: payload.pageNumber},
                 )
                 record = self._extract_single_record(response)
-                record_id = record.get("id") or record.get("Id")
-                if record_id is not None:
-                    fetched_record = self._request_json(
-                        "GET", f"{self._songs_endpoint.rstrip('/')}/{record_id}"
-                    )
-                    if isinstance(fetched_record, dict):
-                        record = fetched_record
                 return self._to_song(record)
             except RuntimeError as exc:
                 message = str(exc).lower()
@@ -154,7 +158,7 @@ class NocoDBDataAdapter:
                 value = payload.get(key)
                 if isinstance(value, dict):
                     return value
-            if payload.get("id") is not None or payload.get("Id") is not None:
+            if payload:
                 return payload
 
         records = self._extract_records(payload)
@@ -164,43 +168,48 @@ class NocoDBDataAdapter:
 
     @staticmethod
     def _to_song_book(record: dict[str, Any]) -> SongBook:
-        song_book_id = record.get("id") or record.get("Id") or record.get("ncRecordId")
+        song_book_id = (
+            record.get("songBookId")
+            or record.get("SongBookId")
+            or record.get("song_book_id")
+            or record.get("maTapSach")
+        )
         name = record.get("name") or record.get("Name")
+
         if not song_book_id or not name:
-            raise RuntimeError("Dữ liệu SongBook từ NocoDB thiếu id hoặc name.")
-        return SongBook(id=str(song_book_id), name=str(name))
+            raise RuntimeError("Dữ liệu SongBook từ NocoDB thiếu songBookId hoặc name.")
+
+        return SongBook(songBookId=str(song_book_id), name=str(name))
 
     @staticmethod
     def _to_song(record: dict[str, Any]) -> Song:
-        song_id = record.get("id") or record.get("Id") or record.get("ncRecordId")
         title = record.get("title") or record.get("Title")
         author = record.get("author") or record.get("Author")
-        song_book_id = record.get("songBookId") or record.get("bookId") or record.get("song_book_id")
-        song_book_name = (
-            record.get("songBookNameSnapshot")
-            or record.get("bookNameSnapshot")
-            or record.get("songBookName")
+        song_book_id = (
+            record.get("songBookId")
+            or record.get("SongBookId")
+            or record.get("bookId")
+            or record.get("song_book_id")
+        )
+        page_number = _coerce_page_number(
+            record.get("pageNumber")
+            or record.get("PageNumber")
+            or record.get("page")
+            or record.get("Page")
+            or record.get("soTrang")
+            or record.get("SoTrang")
         )
 
-        if not song_id or not song_book_id:
+        if not title or not author or not song_book_id or page_number is None:
             raise RuntimeError("Dữ liệu Song từ NocoDB thiếu field bắt buộc.")
 
         return Song(
-            id=str(song_id),
-            title=str(title or "Chưa có tiêu đề"),
+            title=str(title),
             firstLine=str(record.get("firstLine") or record.get("FirstLine") or ""),
-            author=str(author or ""),
+            author=str(author),
             songBookId=str(song_book_id),
-            songBookNameSnapshot=str(song_book_name or ""),
-            pageNumber=_coerce_page_number(
-                record.get("pageNumber")
-                or record.get("PageNumber")
-                or record.get("page")
-                or record.get("Page")
-                or record.get("soTrang")
-                or record.get("SoTrang")
-            ),
-            linkPdf=record.get("linkPdf") or record.get("pdfLink"),
+            pageNumber=page_number,
+            linkPdf=_coerce_optional_string(record.get("linkPdf") or record.get("pdfLink")),
         )
 
 
@@ -211,6 +220,13 @@ def _coerce_page_number(value: Any) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _coerce_optional_string(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 def _normalize_nocodb_base_url(raw_base_url: str | None) -> str | None:

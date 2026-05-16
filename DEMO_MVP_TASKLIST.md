@@ -464,3 +464,47 @@ Route đề xuất: `/song-books`
 - [ ] Người demo xem bài hát trong từng tập sách được.
 - [ ] Frontend và backend deploy được lên Vercel từ cùng một repo bằng 2 Vercel Projects riêng.
 - [ ] Không còn UI gây hiểu nhầm về tính năng chưa làm như OCR, upload file, Supabase, activity log, archive, soft delete.
+
+## Cập nhật triển khai 2026-05-16
+
+### Đã hoàn thành trong codebase
+
+- [x] Chuẩn hóa backend model theo schema nghiệp vụ:
+  - [x] `SongBook`: `songBookId`, `name`.
+  - [x] `Song`: `title`, `firstLine`, `author`, `songBookId`, `pageNumber`, `linkPdf`.
+- [x] `POST /api/song-books` nhận đúng 2 field: `songBookId`, `name`.
+- [x] `POST /api/songs` giữ đúng 6 field demo.
+- [x] Cố định backend NocoDB-only:
+  - [x] Bỏ cấu hình chọn adapter mock.
+  - [x] Xóa `backend/adapters/mock_adapter.py`.
+  - [x] Cập nhật `backend/.env.example` theo NocoDB bắt buộc.
+- [x] Backend trả lỗi cấu hình rõ ràng khi chưa sẵn sàng dữ liệu (`503` ở API dữ liệu).
+- [x] Chuẩn hóa frontend theo schema mới:
+  - [x] Dùng `songBookId` xuyên suốt ở type/API/UI.
+  - [x] Bỏ phụ thuộc `id` tự sinh và `songBookNameSnapshot`.
+  - [x] Form thêm tập sách nhận `songBookId + name`.
+  - [x] Trang `/song-books` bỏ cột `Trang nhỏ nhất`.
+- [x] Sửa helper normalize tiếng Việt (`đ/Đ`) để search có dấu/không dấu đúng.
+- [x] Cập nhật README theo NocoDB-only + schema mới.
+- [x] Bổ sung responsive CSS cơ bản cho header/content trên mobile.
+
+### Validation đã chạy
+
+- [x] `frontend`: `npm run lint`.
+- [x] `frontend`: `npm run build`.
+- [x] `backend`: `python -m compileall .`.
+- [x] `backend`: smoke test API bằng FastAPI TestClient.
+
+### Mục đang bị chặn bởi dữ liệu NocoDB hiện tại
+
+- [ ] `GET /api/song-books` đang lỗi do bảng `SongBooks` hiện chưa có field nghiệp vụ `songBookId` (records chỉ có `Id`, `name`, timestamps).
+- [ ] `POST /api/song-books` chưa thể pass cho schema mới vì NocoDB chưa trả/ghi được `songBookId` theo model yêu cầu.
+- [ ] `POST /api/songs` bị chặn dây chuyền vì backend cần validate `songBookId` từ `SongBooks`.
+
+### Mục chờ bạn thực hiện/duyệt
+
+- [ ] Cập nhật schema thật trên NocoDB:
+  - [ ] Thêm cột `songBookId` vào bảng `SongBooks`.
+  - [ ] Backfill `songBookId` cho dữ liệu cũ và bảo đảm unique.
+- [ ] Cấp quyền/cấu hình deploy Vercel để hoàn tất bước deploy FE/BE production.
+- [ ] Xác nhận danh sách CORS origin staging/production cần mở thêm.

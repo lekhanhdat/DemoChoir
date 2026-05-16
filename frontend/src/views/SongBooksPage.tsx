@@ -1,4 +1,4 @@
-import { FolderAddOutlined, ReadOutlined } from '@ant-design/icons'
+﻿import { FolderAddOutlined, ReadOutlined } from '@ant-design/icons'
 import { Alert, Button, Empty, Form, Input, Space, Spin, Table, Tag, Typography, message } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
@@ -7,6 +7,7 @@ import { ApiError, createSongBook, getSongBooks, getSongs } from '../api/client'
 import type { Song, SongBook } from '../types'
 
 interface SongBookFormValues {
+  songBookId: string
   name: string
 }
 
@@ -49,32 +50,18 @@ export default function SongBooksPage() {
     return map
   }, [songs])
 
-  const firstPageByBookId = useMemo(() => {
-    const map = new Map<string, number | null>()
-    for (const songBook of songBooks) {
-      const pages = (songsByBookId.get(songBook.id) || [])
-        .map((song) => song.pageNumber)
-        .filter((page): page is number => typeof page === 'number' && page > 0)
-      map.set(songBook.id, pages.length > 0 ? Math.min(...pages) : null)
-    }
-    return map
-  }, [songBooks, songsByBookId])
-
-  const sortedSongBooks = useMemo(() => {
-    return [...songBooks].sort((left, right) => {
-      const leftPage = firstPageByBookId.get(left.id) ?? Number.MAX_SAFE_INTEGER
-      const rightPage = firstPageByBookId.get(right.id) ?? Number.MAX_SAFE_INTEGER
-      if (leftPage !== rightPage) {
-        return leftPage - rightPage
-      }
-      return left.name.localeCompare(right.name, 'vi')
-    })
-  }, [songBooks, firstPageByBookId])
+  const sortedSongBooks = useMemo(
+    () => [...songBooks].sort((left, right) => left.name.localeCompare(right.name, 'vi')),
+    [songBooks],
+  )
 
   const handleCreateSongBook = async (values: SongBookFormValues) => {
     setSubmitting(true)
     try {
-      const created = await createSongBook({ name: values.name.trim() })
+      const created = await createSongBook({
+        songBookId: values.songBookId.trim(),
+        name: values.name.trim(),
+      })
       setSongBooks((previous) => [created, ...previous])
       form.resetFields()
       message.success('Đã thêm tập sách mới.')
@@ -92,20 +79,17 @@ export default function SongBooksPage() {
       title: 'Tên tập sách',
       dataIndex: 'name',
       key: 'name',
-      render: (value: string) => <Typography.Text strong>{value}</Typography.Text>,
+      render: (value: string, record) => (
+        <Space direction="vertical" size={2}>
+          <Typography.Text strong>{value}</Typography.Text>
+          <Typography.Text type="secondary">Mã: {record.songBookId}</Typography.Text>
+        </Space>
+      ),
     },
     {
       title: 'Số bài hát',
       key: 'songCount',
-      render: (_, book) => <Tag color="gold">{songsByBookId.get(book.id)?.length || 0}</Tag>,
-    },
-    {
-      title: 'Trang nhỏ nhất',
-      key: 'firstPage',
-      render: (_, book) => {
-        const page = firstPageByBookId.get(book.id)
-        return typeof page === 'number' ? <Tag color="blue">{page}</Tag> : <Tag>-</Tag>
-      },
+      render: (_, book) => <Tag color="gold">{songsByBookId.get(book.songBookId)?.length || 0}</Tag>,
     },
     {
       title: 'Xem bài trong tập',
@@ -113,7 +97,7 @@ export default function SongBooksPage() {
       render: (_, book) => (
         <Button
           icon={<ReadOutlined />}
-          onClick={() => navigate(`/songs?songBookId=${encodeURIComponent(book.id)}`)}
+          onClick={() => navigate(`/songs?songBookId=${encodeURIComponent(book.songBookId)}`)}
         >
           Xem bài
         </Button>
@@ -126,20 +110,26 @@ export default function SongBooksPage() {
       <div className="section-surface">
         <Typography.Title level={3}>Tập sách</Typography.Title>
         <Form<SongBookFormValues>
-          layout="inline"
+          layout="vertical"
           form={form}
           onFinish={handleCreateSongBook}
           requiredMark={false}
         >
           <Form.Item
+            label="Mã tập sách (songBookId)"
+            name="songBookId"
+            rules={[{ required: true, message: 'Vui lòng nhập mã tập sách.' }]}
+          >
+            <Input placeholder="Ví dụ: book-vong-01" />
+          </Form.Item>
+          <Form.Item
             label="Tên tập sách"
             name="name"
             rules={[{ required: true, message: 'Vui lòng nhập tên tập sách.' }]}
-            style={{ flex: 1, minWidth: 280 }}
           >
-            <Input placeholder="Ví dụ: Thánh ca mùa vọng" />
+            <Input placeholder="Ví dụ: Thánh ca Mùa Vọng" />
           </Form.Item>
-          <Form.Item>
+          <Form.Item style={{ marginBottom: 0 }}>
             <Button type="primary" icon={<FolderAddOutlined />} htmlType="submit" loading={submitting}>
               Thêm tập sách mới
             </Button>
@@ -156,15 +146,11 @@ export default function SongBooksPage() {
           </div>
         ) : (
           <Table<SongBook>
-            rowKey="id"
+            rowKey="songBookId"
             dataSource={sortedSongBooks}
             columns={columns}
             pagination={{ pageSize: 8, showSizeChanger: false }}
             locale={{ emptyText: <Empty description="Chưa có tập sách nào" /> }}
-            onRow={(record) => ({
-              onClick: () => navigate(`/songs?songBookId=${encodeURIComponent(record.id)}`),
-              style: { cursor: 'pointer' },
-            })}
           />
         )}
       </div>

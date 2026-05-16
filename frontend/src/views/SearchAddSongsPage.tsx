@@ -1,4 +1,4 @@
-import { FilePdfOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+﻿import { FilePdfOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import {
   Alert,
   Button,
@@ -63,17 +63,15 @@ export default function SearchAddSongsPage() {
   const songBookNameById = useMemo(
     () =>
       new Map<string, string>(
-        songBooks.map((songBook) => [songBook.id, songBook.name] as const),
+        songBooks.map((songBook) => [songBook.songBookId, songBook.name] as const),
       ),
     [songBooks],
   )
 
   const filteredSongs = useMemo(() => {
     return [...filterSongsByKeyword(songs, keyword)].sort((left, right) => {
-      const leftPage = left.pageNumber ?? Number.MAX_SAFE_INTEGER
-      const rightPage = right.pageNumber ?? Number.MAX_SAFE_INTEGER
-      if (leftPage !== rightPage) {
-        return leftPage - rightPage
+      if (left.pageNumber !== right.pageNumber) {
+        return left.pageNumber - right.pageNumber
       }
       return left.title.localeCompare(right.title, 'vi')
     })
@@ -103,16 +101,12 @@ export default function SearchAddSongsPage() {
       dataIndex: 'pageNumber',
       key: 'pageNumber',
       width: 110,
-      sorter: (left, right) => (left.pageNumber || 0) - (right.pageNumber || 0),
-      render: (value?: number | null) =>
-        typeof value === 'number' ? value : <Typography.Text type="secondary">-</Typography.Text>,
+      sorter: (left, right) => left.pageNumber - right.pageNumber,
     },
     {
       title: 'Tập sách',
-      key: 'songBookNameSnapshot',
-      render: (_, record) => (
-        <Tag>{songBookNameById.get(record.songBookId) || 'Không xác định'}</Tag>
-      ),
+      key: 'songBook',
+      render: (_, record) => <Tag>{songBookNameById.get(record.songBookId) || 'Không xác định'}</Tag>,
     },
     {
       title: 'Link PDF',
@@ -185,7 +179,7 @@ export default function SearchAddSongsPage() {
               </div>
             ) : (
               <Table<Song>
-                rowKey="id"
+                rowKey={(record) => `${record.songBookId}-${record.pageNumber}`}
                 columns={columns}
                 dataSource={filteredSongs}
                 pagination={{ pageSize: 8, showSizeChanger: false }}
@@ -239,7 +233,10 @@ export default function SearchAddSongsPage() {
                 >
                   <Select
                     placeholder="Chọn tập sách"
-                    options={songBooks.map((book) => ({ value: book.id, label: book.name }))}
+                    options={songBooks.map((book) => ({
+                      value: book.songBookId,
+                      label: `${book.name} (${book.songBookId})`,
+                    }))}
                   />
                 </Form.Item>
                 <Form.Item

@@ -1,4 +1,4 @@
-import type { Song } from '../types'
+﻿import type { Song } from '../types'
 
 export function normalizeVietnamese(text: string): string {
   return text

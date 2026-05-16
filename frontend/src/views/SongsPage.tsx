@@ -1,4 +1,4 @@
-import { FilePdfOutlined, SearchOutlined } from '@ant-design/icons'
+﻿import { FilePdfOutlined, SearchOutlined } from '@ant-design/icons'
 import { Alert, Col, Empty, Input, Row, Select, Spin, Table, Tag, Typography } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
@@ -56,10 +56,8 @@ export default function SongsPage() {
     }
 
     return [...result].sort((left, right) => {
-      const leftPage = left.pageNumber ?? Number.MAX_SAFE_INTEGER
-      const rightPage = right.pageNumber ?? Number.MAX_SAFE_INTEGER
-      if (leftPage !== rightPage) {
-        return leftPage - rightPage
+      if (left.pageNumber !== right.pageNumber) {
+        return left.pageNumber - right.pageNumber
       }
       return left.title.localeCompare(right.title, 'vi')
     })
@@ -68,7 +66,7 @@ export default function SongsPage() {
   const songBookNameById = useMemo(
     () =>
       new Map<string, string>(
-        songBooks.map((songBook) => [songBook.id, songBook.name] as const),
+        songBooks.map((songBook) => [songBook.songBookId, songBook.name] as const),
       ),
     [songBooks],
   )
@@ -87,9 +85,9 @@ export default function SongsPage() {
   const songBookOptions = useMemo(() => {
     return [...songBookNameById.entries()]
       .sort((left, right) => left[1].localeCompare(right[1], 'vi'))
-      .map(([id, name]) => ({
-        value: id,
-        label: name,
+      .map(([songBookId, name]) => ({
+        value: songBookId,
+        label: `${name} (${songBookId})`,
       }))
   }, [songBookNameById])
 
@@ -107,16 +105,12 @@ export default function SongsPage() {
       dataIndex: 'pageNumber',
       key: 'pageNumber',
       width: 110,
-      sorter: (left, right) => (left.pageNumber || 0) - (right.pageNumber || 0),
-      render: (value?: number | null) =>
-        typeof value === 'number' ? value : <Typography.Text type="secondary">-</Typography.Text>,
+      sorter: (left, right) => left.pageNumber - right.pageNumber,
     },
     {
       title: 'Tập sách',
-      key: 'songBookNameSnapshot',
-      render: (_, record) => (
-        <Tag>{songBookNameById.get(record.songBookId) || 'Không xác định'}</Tag>
-      ),
+      key: 'songBook',
+      render: (_, record) => <Tag>{songBookNameById.get(record.songBookId) || 'Không xác định'}</Tag>,
     },
     {
       title: 'Link PDF',
@@ -176,7 +170,7 @@ export default function SongsPage() {
         </div>
       ) : (
         <Table<Song>
-          rowKey="id"
+          rowKey={(record) => `${record.songBookId}-${record.pageNumber}`}
           dataSource={filteredSongs}
           columns={columns}
           pagination={{ pageSize: 10, showSizeChanger: false }}

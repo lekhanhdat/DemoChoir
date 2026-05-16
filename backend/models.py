@@ -1,28 +1,35 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class SongBook(BaseModel):
-    id: str
+    songBookId: str
     name: str
 
 
 class Song(BaseModel):
-    id: str
     title: str
     firstLine: str = ""
     author: str
     songBookId: str
-    songBookNameSnapshot: str
-    pageNumber: int | None = None
+    pageNumber: int
     linkPdf: str | None = None
 
 
 class SongBookCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    songBookId: str = Field(min_length=1, max_length=100)
     name: str = Field(min_length=1, max_length=200)
+
+    @field_validator("songBookId")
+    @classmethod
+    def normalize_song_book_id(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Mã tập sách không được để trống.")
+        return normalized
 
     @field_validator("name")
     @classmethod

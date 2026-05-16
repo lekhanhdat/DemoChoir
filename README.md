@@ -1,20 +1,18 @@
-# Gia Phuoc Choir - Demo MVP
+﻿# Gia Phuoc Choir - Demo MVP
 
 MVP demo nội bộ cho quản lý/tra cứu bài hát với các luồng chính:
 
 - Đăng nhập demo.
 - Tra cứu bài hát theo tên hoặc câu đầu (có dấu/không dấu).
-- Thêm bài hát mới với đúng 6 trường (có số trang).
+- Thêm bài hát mới với đúng 6 trường.
 - Xem danh sách bài hát.
-- Thêm tập sách và xem bài hát theo từng tập (điều hướng qua trang Bài hát với filter).
+- Thêm tập sách và xem bài hát theo từng tập.
 
 ## Stack và cấu trúc
 
 - `frontend/`: React + Vite + React Router + Ant Design.
 - `backend/`: Python + FastAPI.
-- Data adapter:
-  - `mock` (mặc định): chạy local nhanh, dữ liệu reset khi restart backend.
-  - `nocodb`: dùng khi đã có NocoDB Cloud credentials.
+- Data source: **NocoDB Cloud (bắt buộc, không có mock adapter)**.
 
 ```text
 DemoGiaPhuocChoir/
@@ -37,6 +35,8 @@ API health check:
 ```bash
 GET http://127.0.0.1:8000/api/health
 ```
+
+Nếu thiếu cấu hình NocoDB, `/api/health` sẽ trả `status: degraded`, các API dữ liệu trả lỗi `503`.
 
 ## 2) Chạy frontend local
 
@@ -71,44 +71,53 @@ Frontend mặc định chạy ở:
 - `GET /api/songs`
 - `POST /api/songs`
 
-`POST /api/songs` nhận đúng 6 field:
+### Schema chuẩn
+
+`SongBook`:
 
 ```json
 {
-  "title": "Tên bài hát",
-  "firstLine": "Câu đầu",
-  "author": "Tác giả",
-  "songBookId": "book-1",
+  "songBookId": "book-vong-01",
+  "name": "Thánh ca Mùa Vọng"
+}
+```
+
+`Song`:
+
+```json
+{
+  "title": "Xin Vâng",
+  "firstLine": "Xin vâng theo ý Chúa",
+  "author": "Lm. Kim Long",
+  "songBookId": "book-vong-01",
   "pageNumber": 12,
   "linkPdf": "https://..."
 }
 ```
 
-`songBookNameSnapshot` hiện được giữ như field legacy để tương thích dữ liệu cũ. UI hiển thị tên tập theo bảng `SongBooks` hiện tại, nên nếu đổi tên tập thì bài hát cũ sẽ hiển thị theo tên mới.
-
-## Chuyển sang NocoDB adapter
+## Cấu hình NocoDB
 
 Sửa `backend/.env`:
 
 ```env
-DATA_ADAPTER=nocodb
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 NOCODB_BASE_URL=https://app.nocodb.com
 NOCODB_API_TOKEN=your_token
-NOCODB_SONGS_ENDPOINT=/api/v2/tables/<songs_table_id>/records
-NOCODB_SONG_BOOKS_ENDPOINT=/api/v2/tables/<song_books_table_id>/records
-```
-
-Hoặc dùng table id thay cho endpoint:
-
-```env
 NOCODB_SONGS_TABLE_ID=<songs_table_id>
 NOCODB_SONG_BOOKS_TABLE_ID=<song_books_table_id>
+```
+
+Hoặc dùng endpoint trực tiếp:
+
+```env
+NOCODB_SONGS_ENDPOINT=/api/v2/tables/<songs_table_id>/records
+NOCODB_SONG_BOOKS_ENDPOINT=/api/v2/tables/<song_books_table_id>/records
 ```
 
 Lưu ý:
 
 - Không đặt NocoDB token ở frontend.
-- MVP local mặc định dùng `mock` để chạy nhanh.
+- Backend chỉ chạy với NocoDB Cloud.
 
 ## Lệnh QA nhanh
 
@@ -120,7 +129,7 @@ npm run lint
 npm run build
 ```
 
-Backend (smoke test nhanh bằng script):
+Backend smoke test:
 
 ```bash
 cd backend
@@ -128,7 +137,7 @@ python - <<'PY'
 from fastapi.testclient import TestClient
 from app import app
 client = TestClient(app)
-print(client.get("/api/health").json())
+print(client.get('/api/health').json())
 PY
 ```
 
@@ -137,7 +146,7 @@ PY
 1. Backend project:
    - Root Directory: `backend/`
    - Entrypoint: `app.py` với `app = FastAPI()`
-   - Env vars: `DATA_ADAPTER`, `NOCODB_*`
+   - Env vars: `NOCODB_*`
 2. Frontend project:
    - Root Directory: `frontend/`
    - Build: `npm run build`

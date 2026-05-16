@@ -1,16 +1,14 @@
-export interface SongBook {
-  id: string
+﻿export interface SongBook {
+  songBookId: string
   name: string
 }
 
 export interface Song {
-  id: string
   title: string
   firstLine: string
   author: string
   songBookId: string
-  songBookNameSnapshot: string
-  pageNumber?: number | null
+  pageNumber: number
   linkPdf?: string | null
 }
 
@@ -24,5 +22,6 @@ export interface CreateSongPayload {
 }
 
 export interface CreateSongBookPayload {
+  songBookId: string
   name: string
 }
