@@ -49,6 +49,28 @@ export default function SongBooksPage() {
     return map
   }, [songs])
 
+  const firstPageByBookId = useMemo(() => {
+    const map = new Map<string, number | null>()
+    for (const songBook of songBooks) {
+      const pages = (songsByBookId.get(songBook.id) || [])
+        .map((song) => song.pageNumber)
+        .filter((page): page is number => typeof page === 'number' && page > 0)
+      map.set(songBook.id, pages.length > 0 ? Math.min(...pages) : null)
+    }
+    return map
+  }, [songBooks, songsByBookId])
+
+  const sortedSongBooks = useMemo(() => {
+    return [...songBooks].sort((left, right) => {
+      const leftPage = firstPageByBookId.get(left.id) ?? Number.MAX_SAFE_INTEGER
+      const rightPage = firstPageByBookId.get(right.id) ?? Number.MAX_SAFE_INTEGER
+      if (leftPage !== rightPage) {
+        return leftPage - rightPage
+      }
+      return left.name.localeCompare(right.name, 'vi')
+    })
+  }, [songBooks, firstPageByBookId])
+
   const handleCreateSongBook = async (values: SongBookFormValues) => {
     setSubmitting(true)
     try {
@@ -76,6 +98,14 @@ export default function SongBooksPage() {
       title: 'Số bài hát',
       key: 'songCount',
       render: (_, book) => <Tag color="gold">{songsByBookId.get(book.id)?.length || 0}</Tag>,
+    },
+    {
+      title: 'Trang nhỏ nhất',
+      key: 'firstPage',
+      render: (_, book) => {
+        const page = firstPageByBookId.get(book.id)
+        return typeof page === 'number' ? <Tag color="blue">{page}</Tag> : <Tag>-</Tag>
+      },
     },
     {
       title: 'Xem bài trong tập',
@@ -127,7 +157,7 @@ export default function SongBooksPage() {
         ) : (
           <Table<SongBook>
             rowKey="id"
-            dataSource={songBooks}
+            dataSource={sortedSongBooks}
             columns={columns}
             pagination={{ pageSize: 8, showSizeChanger: false }}
             locale={{ emptyText: <Empty description="Chưa có tập sách nào" /> }}

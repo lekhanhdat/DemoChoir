@@ -4,9 +4,9 @@ MVP demo nội bộ cho quản lý/tra cứu bài hát với các luồng chính
 
 - Đăng nhập demo.
 - Tra cứu bài hát theo tên hoặc câu đầu (có dấu/không dấu).
-- Thêm bài hát mới với đúng 5 trường.
+- Thêm bài hát mới với đúng 6 trường (có số trang).
 - Xem danh sách bài hát.
-- Thêm tập sách và xem bài hát theo từng tập (Drawer).
+- Thêm tập sách và xem bài hát theo từng tập (điều hướng qua trang Bài hát với filter).
 
 ## Stack và cấu trúc
 
@@ -71,7 +71,7 @@ Frontend mặc định chạy ở:
 - `GET /api/songs`
 - `POST /api/songs`
 
-`POST /api/songs` nhận đúng 5 field:
+`POST /api/songs` nhận đúng 6 field:
 
 ```json
 {
@@ -79,11 +79,12 @@ Frontend mặc định chạy ở:
   "firstLine": "Câu đầu",
   "author": "Tác giả",
   "songBookId": "book-1",
+  "pageNumber": 12,
   "linkPdf": "https://..."
 }
 ```
 
-Backend tự fill `songBookNameSnapshot` theo `songBookId`.
+`songBookNameSnapshot` hiện được giữ như field legacy để tương thích dữ liệu cũ. UI hiển thị tên tập theo bảng `SongBooks` hiện tại, nên nếu đổi tên tập thì bài hát cũ sẽ hiển thị theo tên mới.
 
 ## Chuyển sang NocoDB adapter
 
@@ -91,7 +92,7 @@ Sửa `backend/.env`:
 
 ```env
 DATA_ADAPTER=nocodb
-NOCODB_BASE_URL=https://your-nocodb.example.com
+NOCODB_BASE_URL=https://app.nocodb.com
 NOCODB_API_TOKEN=your_token
 NOCODB_SONGS_ENDPOINT=/api/v2/tables/<songs_table_id>/records
 NOCODB_SONG_BOOKS_ENDPOINT=/api/v2/tables/<song_books_table_id>/records

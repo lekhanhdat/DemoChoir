@@ -3,13 +3,14 @@ import { Alert, Col, Empty, Input, Row, Select, Spin, Table, Tag, Typography } f
 import type { TableColumnsType } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ApiError, getSongs } from '../api/client'
-import type { Song } from '../types'
+import { ApiError, getSongBooks, getSongs } from '../api/client'
+import type { Song, SongBook } from '../types'
 import { filterSongsByKeyword } from '../utils/search'
 
 export default function SongsPage() {
   const [searchParams] = useSearchParams()
   const [songs, setSongs] = useState<Song[]>([])
+  const [songBooks, setSongBooks] = useState<SongBook[]>([])
   const [keyword, setKeyword] = useState('')
   const [authorFilter, setAuthorFilter] = useState<string | undefined>(undefined)
   const [songBookFilter, setSongBookFilter] = useState<string | undefined>(undefined)
@@ -21,8 +22,9 @@ export default function SongsPage() {
       setLoading(true)
       setErrorMessage(null)
       try {
-        const response = await getSongs()
-        setSongs(response)
+        const [songsResponse, songBooksResponse] = await Promise.all([getSongs(), getSongBooks()])
+        setSongs(songsResponse)
+        setSongBooks(songBooksResponse)
       } catch (error) {
         const messageText =
           error instanceof ApiError ? error.message : 'Không thể tải danh sách bài hát.'
@@ -53,8 +55,23 @@ export default function SongsPage() {
       result = result.filter((song) => song.songBookId === songBookFilter)
     }
 
-    return result
+    return [...result].sort((left, right) => {
+      const leftPage = left.pageNumber ?? Number.MAX_SAFE_INTEGER
+      const rightPage = right.pageNumber ?? Number.MAX_SAFE_INTEGER
+      if (leftPage !== rightPage) {
+        return leftPage - rightPage
+      }
+      return left.title.localeCompare(right.title, 'vi')
+    })
   }, [songs, keyword, authorFilter, songBookFilter])
+
+  const songBookNameById = useMemo(
+    () =>
+      new Map<string, string>(
+        songBooks.map((songBook) => [songBook.id, songBook.name] as const),
+      ),
+    [songBooks],
+  )
 
   const authorOptions = useMemo(
     () =>
@@ -68,20 +85,13 @@ export default function SongsPage() {
   )
 
   const songBookOptions = useMemo(() => {
-    const entries = new Map<string, string>()
-    for (const song of songs) {
-      if (!entries.has(song.songBookId)) {
-        entries.set(song.songBookId, song.songBookNameSnapshot)
-      }
-    }
-
-    return [...entries.entries()]
+    return [...songBookNameById.entries()]
       .sort((left, right) => left[1].localeCompare(right[1], 'vi'))
       .map(([id, name]) => ({
         value: id,
         label: name,
       }))
-  }, [songs])
+  }, [songBookNameById])
 
   const columns: TableColumnsType<Song> = [
     { title: 'Tên bài hát', dataIndex: 'title', key: 'title' },
@@ -93,10 +103,20 @@ export default function SongsPage() {
     },
     { title: 'Tác giả', dataIndex: 'author', key: 'author' },
     {
+      title: 'Số trang',
+      dataIndex: 'pageNumber',
+      key: 'pageNumber',
+      width: 110,
+      sorter: (left, right) => (left.pageNumber || 0) - (right.pageNumber || 0),
+      render: (value?: number | null) =>
+        typeof value === 'number' ? value : <Typography.Text type="secondary">-</Typography.Text>,
+    },
+    {
       title: 'Tập sách',
-      dataIndex: 'songBookNameSnapshot',
       key: 'songBookNameSnapshot',
-      render: (value: string) => <Tag>{value}</Tag>,
+      render: (_, record) => (
+        <Tag>{songBookNameById.get(record.songBookId) || 'Không xác định'}</Tag>
+      ),
     },
     {
       title: 'Link PDF',
@@ -161,7 +181,7 @@ export default function SongsPage() {
           columns={columns}
           pagination={{ pageSize: 10, showSizeChanger: false }}
           locale={{ emptyText: <Empty description="Chưa có bài hát nào" /> }}
-          scroll={{ x: 760 }}
+          scroll={{ x: 900 }}
         />
       )}
     </div>

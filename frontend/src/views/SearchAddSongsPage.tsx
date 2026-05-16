@@ -6,6 +6,7 @@ import {
   Empty,
   Form,
   Input,
+  InputNumber,
   Row,
   Select,
   Space,
@@ -26,6 +27,7 @@ interface SongFormValues {
   firstLine?: string
   author: string
   songBookId: string
+  pageNumber: number
   linkPdf?: string
 }
 
@@ -58,7 +60,24 @@ export default function SearchAddSongsPage() {
     void loadData()
   }, [])
 
-  const filteredSongs = useMemo(() => filterSongsByKeyword(songs, keyword), [songs, keyword])
+  const songBookNameById = useMemo(
+    () =>
+      new Map<string, string>(
+        songBooks.map((songBook) => [songBook.id, songBook.name] as const),
+      ),
+    [songBooks],
+  )
+
+  const filteredSongs = useMemo(() => {
+    return [...filterSongsByKeyword(songs, keyword)].sort((left, right) => {
+      const leftPage = left.pageNumber ?? Number.MAX_SAFE_INTEGER
+      const rightPage = right.pageNumber ?? Number.MAX_SAFE_INTEGER
+      if (leftPage !== rightPage) {
+        return leftPage - rightPage
+      }
+      return left.title.localeCompare(right.title, 'vi')
+    })
+  }, [songs, keyword])
 
   const columns: TableColumnsType<Song> = [
     {
@@ -71,14 +90,29 @@ export default function SearchAddSongsPage() {
       title: 'Câu đầu',
       dataIndex: 'firstLine',
       key: 'firstLine',
-      render: (value: string) => value || <Typography.Text type="secondary">-</Typography.Text>,
+      render: (value: string) =>
+        value ? (
+          <Typography.Text style={{ whiteSpace: 'normal' }}>{value}</Typography.Text>
+        ) : (
+          <Typography.Text type="secondary">-</Typography.Text>
+        ),
     },
     { title: 'Tác giả', dataIndex: 'author', key: 'author' },
     {
+      title: 'Số trang',
+      dataIndex: 'pageNumber',
+      key: 'pageNumber',
+      width: 110,
+      sorter: (left, right) => (left.pageNumber || 0) - (right.pageNumber || 0),
+      render: (value?: number | null) =>
+        typeof value === 'number' ? value : <Typography.Text type="secondary">-</Typography.Text>,
+    },
+    {
       title: 'Tập sách',
-      dataIndex: 'songBookNameSnapshot',
       key: 'songBookNameSnapshot',
-      render: (value: string) => <Tag>{value}</Tag>,
+      render: (_, record) => (
+        <Tag>{songBookNameById.get(record.songBookId) || 'Không xác định'}</Tag>
+      ),
     },
     {
       title: 'Link PDF',
@@ -103,6 +137,7 @@ export default function SearchAddSongsPage() {
         firstLine: values.firstLine?.trim(),
         author: values.author.trim(),
         songBookId: values.songBookId,
+        pageNumber: values.pageNumber,
         linkPdf: values.linkPdf?.trim(),
       })
 
@@ -157,7 +192,6 @@ export default function SearchAddSongsPage() {
                 locale={{
                   emptyText: <Empty description="Chưa có bài hát nào" />,
                 }}
-                scroll={{ x: 760 }}
               />
             )}
           </div>
@@ -207,6 +241,13 @@ export default function SearchAddSongsPage() {
                     placeholder="Chọn tập sách"
                     options={songBooks.map((book) => ({ value: book.id, label: book.name }))}
                   />
+                </Form.Item>
+                <Form.Item
+                  label="Số trang"
+                  name="pageNumber"
+                  rules={[{ required: true, message: 'Vui lòng nhập số trang.' }]}
+                >
+                  <InputNumber min={1} style={{ width: '100%' }} placeholder="Ví dụ: 12" />
                 </Form.Item>
                 <Form.Item label="Link PDF" name="linkPdf">
                   <Input placeholder="https://..." />

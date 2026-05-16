@@ -10,6 +10,7 @@ export interface Song {
   author: string
   songBookId: string
   songBookNameSnapshot: string
+  pageNumber?: number | null
   linkPdf?: string | null
 }
 
@@ -18,6 +19,7 @@ export interface CreateSongPayload {
   firstLine?: string
   author: string
   songBookId: string
+  pageNumber: number
   linkPdf?: string
 }
 

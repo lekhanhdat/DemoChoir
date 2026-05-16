@@ -15,6 +15,7 @@ class Song(BaseModel):
     author: str
     songBookId: str
     songBookNameSnapshot: str
+    pageNumber: int | None = None
     linkPdf: str | None = None
 
 
@@ -39,6 +40,7 @@ class SongCreateRequest(BaseModel):
     firstLine: str | None = Field(default=None, max_length=500)
     author: str = Field(min_length=1, max_length=200)
     songBookId: str = Field(min_length=1, max_length=100)
+    pageNumber: int = Field(ge=1, le=10000)
     linkPdf: str | None = Field(default=None, max_length=1000)
 
     @field_validator("title", "author", "songBookId")

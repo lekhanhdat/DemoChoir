@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import httpx
@@ -27,7 +28,7 @@ class NocoDBDataAdapter:
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "NocoDBDataAdapter":
-        base_url = settings.nocodb_base_url
+        base_url = _normalize_nocodb_base_url(settings.nocodb_base_url)
         api_token = settings.nocodb_api_token
         songs_endpoint = settings.nocodb_songs_endpoint
         song_books_endpoint = settings.nocodb_song_books_endpoint
@@ -62,7 +63,23 @@ class NocoDBDataAdapter:
     def list_songs(self) -> list[Song]:
         payload = self._request_json("GET", self._songs_endpoint)
         records = self._extract_records(payload)
-        return [self._to_song(record) for record in records]
+        songs: list[Song] = []
+        for record in records:
+            try:
+                songs.append(self._to_song(record))
+            except RuntimeError:
+                continue
+        song_book_name_by_id = {song_book.id: song_book.name for song_book in self.list_song_books()}
+        return [
+            song.model_copy(
+                update={
+                    "songBookNameSnapshot": song_book_name_by_id.get(
+                        song.songBookId, song.songBookNameSnapshot
+                    )
+                }
+            )
+            for song in songs
+        ]
 
     def create_song(self, payload: SongCreateRequest) -> Song:
         selected_song_book = next(
@@ -80,10 +97,32 @@ class NocoDBDataAdapter:
             "songBookNameSnapshot": selected_song_book.name,
             "linkPdf": payload.linkPdf,
         }
+        last_error: RuntimeError | None = None
+        for page_field_name in ("pageNumber", "soTrang", "page"):
+            try:
+                response = self._request_json(
+                    "POST",
+                    self._songs_endpoint,
+                    {**post_body, page_field_name: payload.pageNumber},
+                )
+                record = self._extract_single_record(response)
+                record_id = record.get("id") or record.get("Id")
+                if record_id is not None:
+                    fetched_record = self._request_json(
+                        "GET", f"{self._songs_endpoint.rstrip('/')}/{record_id}"
+                    )
+                    if isinstance(fetched_record, dict):
+                        record = fetched_record
+                return self._to_song(record)
+            except RuntimeError as exc:
+                message = str(exc).lower()
+                if "unknown" not in message and "column" not in message:
+                    raise
+                last_error = exc
 
-        response = self._request_json("POST", self._songs_endpoint, post_body)
-        record = self._extract_single_record(response)
-        return self._to_song(record)
+        if last_error is not None:
+            raise last_error
+        raise RuntimeError("Không thể tạo bài hát trong NocoDB.")
 
     def _request_json(self, method: str, endpoint: str, body: dict[str, Any] | None = None) -> Any:
         response = self._client.request(method, endpoint, json=body)
@@ -115,6 +154,8 @@ class NocoDBDataAdapter:
                 value = payload.get(key)
                 if isinstance(value, dict):
                     return value
+            if payload.get("id") is not None or payload.get("Id") is not None:
+                return payload
 
         records = self._extract_records(payload)
         if not records:
@@ -141,15 +182,50 @@ class NocoDBDataAdapter:
             or record.get("songBookName")
         )
 
-        if not song_id or not title or not author or not song_book_id:
+        if not song_id or not song_book_id:
             raise RuntimeError("Dữ liệu Song từ NocoDB thiếu field bắt buộc.")
 
         return Song(
             id=str(song_id),
-            title=str(title),
+            title=str(title or "Chưa có tiêu đề"),
             firstLine=str(record.get("firstLine") or record.get("FirstLine") or ""),
-            author=str(author),
+            author=str(author or ""),
             songBookId=str(song_book_id),
             songBookNameSnapshot=str(song_book_name or ""),
+            pageNumber=_coerce_page_number(
+                record.get("pageNumber")
+                or record.get("PageNumber")
+                or record.get("page")
+                or record.get("Page")
+                or record.get("soTrang")
+                or record.get("SoTrang")
+            ),
             linkPdf=record.get("linkPdf") or record.get("pdfLink"),
         )
+
+
+def _coerce_page_number(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalize_nocodb_base_url(raw_base_url: str | None) -> str | None:
+    if not raw_base_url:
+        return None
+
+    base_url = raw_base_url.strip()
+    if base_url.startswith("http://") or base_url.startswith("https://"):
+        return base_url
+
+    if "." in base_url:
+        return f"https://{base_url}"
+
+    # If caller passes a base id/slug instead of full host, fall back to NocoDB Cloud host.
+    if re.fullmatch(r"[a-zA-Z0-9_-]{8,}", base_url):
+        return "https://app.nocodb.com"
+
+    return f"https://{base_url}"

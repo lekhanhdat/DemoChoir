@@ -19,6 +19,7 @@ class MockDataAdapter:
                 author="Lm. Kim Long",
                 songBookId="book-1",
                 songBookNameSnapshot="Thánh ca Mùa Vọng",
+                pageNumber=12,
                 linkPdf="https://example.com/xin-vang.pdf",
             ),
             Song(
@@ -28,6 +29,7 @@ class MockDataAdapter:
                 author="Franz Xaver Gruber",
                 songBookId="book-1",
                 songBookNameSnapshot="Thánh ca Mùa Vọng",
+                pageNumber=21,
             ),
             Song(
                 id="song-3",
@@ -36,6 +38,7 @@ class MockDataAdapter:
                 author="Phanxicô",
                 songBookId="book-2",
                 songBookNameSnapshot="Thánh ca Phục Sinh",
+                pageNumber=5,
             ),
             Song(
                 id="song-4",
@@ -44,6 +47,7 @@ class MockDataAdapter:
                 author="Linh mục Tiến Linh",
                 songBookId="book-2",
                 songBookNameSnapshot="Thánh ca Phục Sinh",
+                pageNumber=16,
             ),
             Song(
                 id="song-5",
@@ -52,6 +56,7 @@ class MockDataAdapter:
                 author="Nhạc sĩ Minh Tâm",
                 songBookId="book-1",
                 songBookNameSnapshot="Thánh ca Mùa Vọng",
+                pageNumber=28,
             ),
         ]
 
@@ -64,7 +69,17 @@ class MockDataAdapter:
         return created
 
     def list_songs(self) -> list[Song]:
-        return list(self._songs)
+        song_book_name_by_id = {song_book.id: song_book.name for song_book in self._song_books}
+        return [
+            song.model_copy(
+                update={
+                    "songBookNameSnapshot": song_book_name_by_id.get(
+                        song.songBookId, song.songBookNameSnapshot
+                    )
+                }
+            )
+            for song in self._songs
+        ]
 
     def create_song(self, payload: SongCreateRequest) -> Song:
         selected_song_book = next(
@@ -81,6 +96,7 @@ class MockDataAdapter:
             author=payload.author,
             songBookId=selected_song_book.id,
             songBookNameSnapshot=selected_song_book.name,
+            pageNumber=payload.pageNumber,
             linkPdf=payload.linkPdf,
         )
         self._songs.insert(0, created_song)
