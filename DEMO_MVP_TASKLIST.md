@@ -228,11 +228,11 @@ Route đề xuất: `/song-books`
 - [ ] Khi page load, gọi FastAPI lấy danh sách tập sách và bài hát.
 - [ ] Phần trên có form `Thêm tập sách mới`.
 - [ ] Dùng Ant Design `Form`, `Input`, `Button` cho form thêm tập sách.
-- [ ] Form thêm tập sách có 2 trường:
-  - [ ] `Mã tập sách (songBookId)` - bắt buộc, unique.
+- [ ] Form thêm tập sách chỉ cần 1 trường:
   - [ ] `Tên tập sách` - bắt buộc.
+  - [ ] `songBookId` tự sinh ở frontend để người dùng không phải nhập mã kỹ thuật.
 - [ ] Khi submit form:
-  - [ ] Validate `songBookId` và tên tập sách.
+  - [ ] Validate tên tập sách và tự sinh `songBookId`.
   - [ ] Gửi request tạo tập sách tới FastAPI.
   - [ ] Reset form.
   - [ ] Refresh danh sách tập sách hoặc append tập mới vào state hiện tại.
@@ -379,7 +379,6 @@ Route đề xuất: `/song-books`
   - [x] `NOCODB_BASE_URL=...`
   - [x] `NOCODB_API_TOKEN=...`
   - [x] table id theo cấu hình ở trên.
-- [ ] (Phía bạn) Xác nhận CORS origin cần mở thêm (nếu có frontend staging).
 - [x] (Phía bạn) Chạy test nhanh kết nối NocoDB qua backend:
   - [x] `GET /api/health` trả `adapter: nocodb`.
   - [x] `GET /api/song-books` đọc được dữ liệu từ NocoDB.
@@ -388,19 +387,18 @@ Route đề xuất: `/song-books`
 ### Bước 10: Hoàn thiện backend NocoDB-only
 
 - [x] Tạo `NocoDBDataAdapter`.
-- [ ] Map response NocoDB về model chuẩn `Song` và `SongBook` theo schema mới (`songBookId` nghiệp vụ, bỏ `songBookNameSnapshot`).
-- [ ] Cố định backend chạy NocoDB-only (không còn cấu hình chọn mock adapter).
-- [ ] Test lại 4 API backend với NocoDB Cloud.
-- [ ] Đảm bảo frontend không phụ thuộc field `id` tự sinh của NocoDB.
+- [x] Map response NocoDB về model chuẩn `Song` và `SongBook` theo schema mới (`songBookId` nghiệp vụ, bỏ `songBookNameSnapshot`).
+- [x] Cố định backend chạy NocoDB-only (không còn cấu hình chọn mock adapter).
+- [ ] Test lại 4 API backend với NocoDB Cloud (đã test `GET`, chưa chạy `POST` để tránh spam thêm dữ liệu demo).
+- [x] Đảm bảo frontend không phụ thuộc field `id` tự sinh của NocoDB.
 
 ### Bước 11: Deploy FE và BE lên Vercel
 
-- [ ] (Phía bạn) Cung cấp quyền/project info Vercel để triển khai.
-- [ ] Tạo Vercel Project cho `backend/`.
-- [ ] Cấu hình backend env vars trên Vercel: `NOCODB_BASE_URL`, `NOCODB_API_TOKEN`, các `NOCODB_*_TABLE_ID`.
-- [ ] Deploy backend và test `GET /api/health`.
-- [ ] Tạo Vercel Project cho `frontend/`.
-- [ ] Cấu hình frontend env var `VITE_API_BASE_URL` trỏ tới URL backend Vercel.
+- [x] Đã có Vercel Project cho `backend/` (Root Directory: `backend/`).
+- [x] Backend env vars đã cấu hình và `GET /api/health` production trả OK.
+- [x] Đã có Vercel Project cho `frontend/` (Root Directory: `frontend/`).
+- [ ] Redeploy backend để nhận code mới (route `/`); hiện URL root backend vẫn trả `{"detail":"Not Found"}` vì chưa redeploy bản mới từ local.
+- [ ] Cập nhật frontend env var `VITE_API_BASE_URL` trên Vercel; bản deploy hiện tại đang fallback về `http://127.0.0.1:8000`.
 - [ ] Deploy frontend và smoke test FE gọi được BE production.
 
 ### Bước 12: Validation và README
@@ -413,27 +411,27 @@ Route đề xuất: `/song-books`
 
 ## Việc tiếp theo (ưu tiên)
 
-- [ ] Chuẩn hóa backend theo schema mới: bỏ `songBookNameSnapshot`, join theo `songBookId` nghiệp vụ, không dùng `id` tự sinh cho logic nghiệp vụ.
-- [ ] Chuẩn hóa frontend theo schema mới: `SongBook` dùng `songBookId`, form thêm tập sách nhận `songBookId + name`, bỏ cột `Trang nhỏ nhất`.
-- [ ] Cố định runtime NocoDB-only: bỏ default/mock path (`DATA_ADAPTER=mock`) và xóa luồng fallback mock.
+- [x] Chuẩn hóa backend theo schema mới: bỏ `songBookNameSnapshot`, join theo `songBookId` nghiệp vụ, không dùng `id` tự sinh cho logic nghiệp vụ.
+- [x] Chuẩn hóa frontend theo schema mới: `SongBook` dùng `songBookId`, form thêm tập sách chỉ nhập `name` (frontend tự sinh `songBookId`), bỏ cột `Trang nhỏ nhất`.
+- [x] Cố định runtime NocoDB-only: bỏ default/mock path (`DATA_ADAPTER=mock`) và xóa luồng fallback mock.
 - [ ] Chạy lại smoke test 4 API và 3 màn hình chính (`/`, `/songs`, `/song-books`) với dữ liệu NocoDB thật.
 
 ## QA demo nhanh
 
 - [ ] Chạy frontend dev server thành công.
 - [ ] Chạy FastAPI backend dev server thành công.
-- [ ] Chạy `npm run build` cho frontend.
+- [x] Chạy `npm run build` cho frontend.
 - [ ] Smoke test login:
   - [ ] Sai account bị chặn.
   - [ ] Đúng account vào được trang chính.
   - [ ] Logout quay về login.
 - [ ] Smoke test FastAPI với NocoDB adapter sau khi setup NocoDB Cloud:
-  - [ ] Lấy được danh sách tập sách từ NocoDB.
+  - [x] Lấy được danh sách tập sách từ NocoDB.
   - [ ] Tạo được tập sách mới và lưu vào NocoDB.
-  - [ ] Lấy được danh sách bài hát từ NocoDB.
+  - [x] Lấy được danh sách bài hát từ NocoDB.
   - [ ] Tạo được bài hát mới và lưu vào NocoDB.
 - [ ] Smoke test deploy Vercel:
-  - [ ] Backend Vercel trả về OK ở `GET /api/health`.
+  - [x] Backend Vercel trả về OK ở `GET /api/health`.
   - [ ] Frontend Vercel gọi được backend qua `VITE_API_BASE_URL`.
   - [ ] Không có NocoDB token trong frontend env hoặc client bundle.
 - [ ] Smoke test search:
@@ -446,7 +444,7 @@ Route đề xuất: `/song-books`
   - [ ] Thiếu tập sách bị lỗi.
   - [ ] Đủ dữ liệu thì tạo được và hiện trong list.
 - [ ] Smoke test tập sách:
-  - [ ] Thêm tập sách mới với `songBookId` + tên.
+  - [ ] Thêm tập sách mới chỉ với tên (không cần nhập mã thủ công).
   - [ ] Tập mới xuất hiện trong dropdown chọn sách khi thêm bài hát.
   - [ ] Bấm vào tập sách thấy đúng danh sách bài hát thuộc tập.
 
@@ -482,8 +480,14 @@ Route đề xuất: `/song-books`
 - [x] Chuẩn hóa frontend theo schema mới:
   - [x] Dùng `songBookId` xuyên suốt ở type/API/UI.
   - [x] Bỏ phụ thuộc `id` tự sinh và `songBookNameSnapshot`.
-  - [x] Form thêm tập sách nhận `songBookId + name`.
+  - [x] Form thêm tập sách chỉ nhập `name` (frontend tự sinh `songBookId`).
   - [x] Trang `/song-books` bỏ cột `Trang nhỏ nhất`.
+- [x] UI tập sách hiển thị tối giản theo yêu cầu người dùng:
+  - [x] Danh sách tập sách chỉ hiển thị tên tập.
+  - [x] Dropdown chọn tập sách chỉ hiển thị tên (không hiển thị mã kỹ thuật).
+- [x] Bổ sung route `GET /` cho backend để dễ kiểm tra deploy.
+- [x] Đã backfill dữ liệu `SongBooks.songBookId` trên NocoDB để khôi phục liên kết với `Songs.songBookId`.
+- [x] Đã xóa field `songBookNameSnapshot` khỏi bảng `Songs` trên NocoDB.
 - [x] Sửa helper normalize tiếng Việt (`đ/Đ`) để search có dấu/không dấu đúng.
 - [x] Cập nhật README theo NocoDB-only + schema mới.
 - [x] Bổ sung responsive CSS cơ bản cho header/content trên mobile.
@@ -495,16 +499,17 @@ Route đề xuất: `/song-books`
 - [x] `backend`: `python -m compileall .`.
 - [x] `backend`: smoke test API bằng FastAPI TestClient.
 
-### Mục đang bị chặn bởi dữ liệu NocoDB hiện tại
+### Mục đang bị chặn hiện tại
 
-- [ ] `GET /api/song-books` đang lỗi do bảng `SongBooks` hiện chưa có field nghiệp vụ `songBookId` (records chỉ có `Id`, `name`, timestamps).
-- [ ] `POST /api/song-books` chưa thể pass cho schema mới vì NocoDB chưa trả/ghi được `songBookId` theo model yêu cầu.
-- [ ] `POST /api/songs` bị chặn dây chuyền vì backend cần validate `songBookId` từ `SongBooks`.
+- [ ] Chưa redeploy backend production sau khi thêm route `/`, nên URL root backend vẫn đang `404`.
+- [ ] Chưa chạy test `POST /api/song-books` và `POST /api/songs` trên production để tránh tạo thêm dữ liệu rác trong bảng demo.
+- [ ] Frontend production đang build với `API_BASE_URL` local (`127.0.0.1:8000`), nên chưa gọi được backend Vercel.
+- [ ] Một số record cũ ở bảng `Songs` còn thiếu `author` hoặc `pageNumber`; backend đang bỏ qua các record không hợp lệ theo schema.
 
 ### Mục chờ bạn thực hiện/duyệt
 
-- [ ] Cập nhật schema thật trên NocoDB:
-  - [ ] Thêm cột `songBookId` vào bảng `SongBooks`.
-  - [ ] Backfill `songBookId` cho dữ liệu cũ và bảo đảm unique.
-- [ ] Cấp quyền/cấu hình deploy Vercel để hoàn tất bước deploy FE/BE production.
-- [ ] Xác nhận danh sách CORS origin staging/production cần mở thêm.
+- [x] Cập nhật schema thật trên NocoDB:
+  - [x] Đã thêm cột `songBookId` vào bảng `SongBooks`.
+  - [x] Đã backfill `songBookId` cho dữ liệu cũ theo `Id` hiện có để giữ liên kết dữ liệu.
+- [ ] Redeploy backend Vercel từ dashboard hoặc CLI đã đăng nhập để áp dụng route `/` mới.
+- [ ] Chạy smoke test production cho 2 API tạo mới (`POST /api/song-books`, `POST /api/songs`) với dữ liệu kiểm thử tối thiểu.

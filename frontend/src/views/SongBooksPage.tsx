@@ -7,8 +7,19 @@ import { ApiError, createSongBook, getSongBooks, getSongs } from '../api/client'
 import type { Song, SongBook } from '../types'
 
 interface SongBookFormValues {
-  songBookId: string
   name: string
+}
+
+function buildNextSongBookId(songBooks: SongBook[]): string {
+  const numericIds = songBooks
+    .map((book) => Number.parseInt(book.songBookId, 10))
+    .filter((value) => Number.isFinite(value))
+
+  if (numericIds.length === 0) {
+    return '1'
+  }
+
+  return String(Math.max(...numericIds) + 1)
 }
 
 export default function SongBooksPage() {
@@ -58,8 +69,9 @@ export default function SongBooksPage() {
   const handleCreateSongBook = async (values: SongBookFormValues) => {
     setSubmitting(true)
     try {
+      const generatedSongBookId = buildNextSongBookId(songBooks)
       const created = await createSongBook({
-        songBookId: values.songBookId.trim(),
+        songBookId: generatedSongBookId,
         name: values.name.trim(),
       })
       setSongBooks((previous) => [created, ...previous])
@@ -79,12 +91,7 @@ export default function SongBooksPage() {
       title: 'Tên tập sách',
       dataIndex: 'name',
       key: 'name',
-      render: (value: string, record) => (
-        <Space direction="vertical" size={2}>
-          <Typography.Text strong>{value}</Typography.Text>
-          <Typography.Text type="secondary">Mã: {record.songBookId}</Typography.Text>
-        </Space>
-      ),
+      render: (value: string) => <Typography.Text strong>{value}</Typography.Text>,
     },
     {
       title: 'Số bài hát',
@@ -115,13 +122,6 @@ export default function SongBooksPage() {
           onFinish={handleCreateSongBook}
           requiredMark={false}
         >
-          <Form.Item
-            label="Mã tập sách (songBookId)"
-            name="songBookId"
-            rules={[{ required: true, message: 'Vui lòng nhập mã tập sách.' }]}
-          >
-            <Input placeholder="Ví dụ: book-vong-01" />
-          </Form.Item>
           <Form.Item
             label="Tên tập sách"
             name="name"

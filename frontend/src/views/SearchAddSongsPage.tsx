@@ -235,7 +235,7 @@ export default function SearchAddSongsPage() {
                     placeholder="Chọn tập sách"
                     options={songBooks.map((book) => ({
                       value: book.songBookId,
-                      label: `${book.name} (${book.songBookId})`,
+                      label: book.name,
                     }))}
                   />
                 </Form.Item>

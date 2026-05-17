@@ -35,6 +35,14 @@ def _get_adapter() -> DataAdapter:
     return adapter
 
 
+@app.get("/")
+def root() -> dict[str, str]:
+    return {
+        "name": "Gia Phuoc Choir API",
+        "health": "/api/health",
+    }
+
+
 @app.get("/api/health")
 def health_check() -> dict[str, str]:
     return {

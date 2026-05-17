@@ -87,7 +87,7 @@ export default function SongsPage() {
       .sort((left, right) => left[1].localeCompare(right[1], 'vi'))
       .map(([songBookId, name]) => ({
         value: songBookId,
-        label: `${name} (${songBookId})`,
+        label: name,
       }))
   }, [songBookNameById])
 

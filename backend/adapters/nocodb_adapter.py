@@ -61,7 +61,7 @@ class NocoDBDataAdapter:
             except RuntimeError:
                 invalid_records += 1
 
-        if invalid_records > 0:
+        if not song_books and invalid_records > 0:
             raise RuntimeError(
                 "Dữ liệu bảng SongBooks không hợp lệ. Cần đủ 2 field songBookId và name."
             )
@@ -94,8 +94,9 @@ class NocoDBDataAdapter:
         return songs
 
     def create_song(self, payload: SongCreateRequest) -> Song:
+        normalized_song_book_id = payload.songBookId.strip()
         song_book_exists = any(
-            song_book.songBookId == payload.songBookId for song_book in self.list_song_books()
+            song_book.songBookId == normalized_song_book_id for song_book in self.list_song_books()
         )
         if not song_book_exists:
             raise ValueError("Không tìm thấy tập sách đã chọn.")
@@ -104,7 +105,7 @@ class NocoDBDataAdapter:
             "title": payload.title,
             "firstLine": payload.firstLine or "",
             "author": payload.author,
-            "songBookId": payload.songBookId,
+            "songBookId": normalized_song_book_id,
             "linkPdf": payload.linkPdf,
         }
 
@@ -168,28 +169,32 @@ class NocoDBDataAdapter:
 
     @staticmethod
     def _to_song_book(record: dict[str, Any]) -> SongBook:
-        song_book_id = (
+        song_book_id = _coerce_song_book_id(
             record.get("songBookId")
             or record.get("SongBookId")
             or record.get("song_book_id")
             or record.get("maTapSach")
+            or record.get("songBook")
+            or record.get("SongBook")
         )
-        name = record.get("name") or record.get("Name")
+        name = _coerce_optional_string(record.get("name") or record.get("Name"))
 
         if not song_book_id or not name:
             raise RuntimeError("Dữ liệu SongBook từ NocoDB thiếu songBookId hoặc name.")
 
-        return SongBook(songBookId=str(song_book_id), name=str(name))
+        return SongBook(songBookId=song_book_id, name=name)
 
     @staticmethod
     def _to_song(record: dict[str, Any]) -> Song:
         title = record.get("title") or record.get("Title")
         author = record.get("author") or record.get("Author")
-        song_book_id = (
+        song_book_id = _coerce_song_book_id(
             record.get("songBookId")
             or record.get("SongBookId")
             or record.get("bookId")
             or record.get("song_book_id")
+            or record.get("songBook")
+            or record.get("SongBook")
         )
         page_number = _coerce_page_number(
             record.get("pageNumber")
@@ -207,7 +212,7 @@ class NocoDBDataAdapter:
             title=str(title),
             firstLine=str(record.get("firstLine") or record.get("FirstLine") or ""),
             author=str(author),
-            songBookId=str(song_book_id),
+            songBookId=song_book_id,
             pageNumber=page_number,
             linkPdf=_coerce_optional_string(record.get("linkPdf") or record.get("pdfLink")),
         )
@@ -225,6 +230,28 @@ def _coerce_page_number(value: Any) -> int | None:
 def _coerce_optional_string(value: Any) -> str | None:
     if value is None:
         return None
+    text = str(value).strip()
+    return text or None
+
+
+def _coerce_song_book_id(value: Any) -> str | None:
+    if value is None:
+        return None
+
+    if isinstance(value, list):
+        for item in value:
+            extracted = _coerce_song_book_id(item)
+            if extracted is not None:
+                return extracted
+        return None
+
+    if isinstance(value, dict):
+        for key in ("songBookId", "SongBookId", "id", "Id"):
+            extracted = _coerce_song_book_id(value.get(key))
+            if extracted is not None:
+                return extracted
+        return None
+
     text = str(value).strip()
     return text or None
 
