@@ -2,7 +2,7 @@
 import { Alert, Button, Card, Form, Input, Space, Typography } from 'antd'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { loginWithDemoAccount } from '../utils/auth'
+import { loginWithLocalAccount } from '../utils/auth'
 
 interface LoginFormValues {
   username: string
@@ -14,9 +14,9 @@ export default function LoginPage() {
   const navigate = useNavigate()
 
   const onSubmit = (values: LoginFormValues) => {
-    const success = loginWithDemoAccount(values.username.trim(), values.password)
+    const success = loginWithLocalAccount(values.username, values.password)
     if (!success) {
-      setErrorMessage('Sai tài khoản demo. Vui lòng dùng demo / demo123.')
+      setErrorMessage('Sai tài khoản hoặc mật khẩu.')
       return
     }
 
@@ -29,10 +29,9 @@ export default function LoginPage() {
       <Card className="login-card">
         <Space direction="vertical" size={20} style={{ width: '100%' }}>
           <div>
-            <Typography.Title level={3} style={{ marginBottom: 4 }}>
-              Gia Phuoc Choir
+            <Typography.Title level={3} style={{ marginBottom: 4, textAlign: 'center' }}>
+              Ca đoàn giáo xứ Gia Phước
             </Typography.Title>
-            <Typography.Text type="secondary">Đăng nhập demo để bắt đầu.</Typography.Text>
           </div>
 
           {errorMessage && <Alert type="error" showIcon message={errorMessage} />}
@@ -43,7 +42,7 @@ export default function LoginPage() {
               name="username"
               rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập.' }]}
             >
-              <Input prefix={<UserOutlined />} placeholder="demo" autoComplete="username" />
+              <Input prefix={<UserOutlined />} placeholder="Tên đăng nhập" autoComplete="username" />
             </Form.Item>
             <Form.Item
               label="Mật khẩu"
@@ -52,7 +51,7 @@ export default function LoginPage() {
             >
               <Input.Password
                 prefix={<LockOutlined />}
-                placeholder="demo123"
+                placeholder="Mật khẩu"
                 autoComplete="current-password"
               />
             </Form.Item>

@@ -8,13 +8,14 @@
 import { Button, Layout, Menu, Space, Typography } from 'antd'
 import { useMemo } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { clearAuth } from '../utils/auth'
+import { clearAuth, getCurrentUser } from '../utils/auth'
 
 const { Header, Sider, Content } = Layout
 
 export default function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
+  const currentUser = getCurrentUser()
 
   const selectedKey = useMemo(() => {
     if (location.pathname.startsWith('/song-books')) {
@@ -40,7 +41,7 @@ export default function AppShell() {
   return (
     <Layout className="app-layout">
       <Sider theme="light" breakpoint="lg" collapsedWidth="0">
-        <div className="brand">Gia Phuoc Choir</div>
+        <div className="brand">Ban Thánh nhạc</div>
         <Menu
           mode="inline"
           selectedKeys={[selectedKey]}
@@ -51,12 +52,12 @@ export default function AppShell() {
       <Layout>
         <Header className="app-header">
           <Typography.Title level={4} className="app-title">
-            Gia Phuoc Choir
+            Ca đoàn Gia Phước
           </Typography.Title>
           <Space size={16}>
             <Space size={8}>
               <UserOutlined />
-              <Typography.Text>Ca trưởng (demo)</Typography.Text>
+              <Typography.Text>{currentUser?.displayName || 'Thành viên'}</Typography.Text>
             </Space>
             <Button icon={<LogoutOutlined />} onClick={handleLogout}>
               Đăng xuất

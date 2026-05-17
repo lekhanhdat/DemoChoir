@@ -1,27 +1,42 @@
-﻿# Gia Phuoc Choir - Demo MVP
+# Gia Phuoc Choir - Demo MVP
 
-MVP demo nội bộ cho quản lý/tra cứu bài hát với các luồng chính:
+## Giới thiệu
 
-- Đăng nhập demo.
-- Tra cứu bài hát theo tên hoặc câu đầu (có dấu/không dấu).
-- Thêm bài hát mới với đúng 6 trường.
+Đây là demo MVP cho bài toán quản lý và tra cứu bài hát nội bộ của ca đoàn Gia Phước.  
+Mục tiêu của dự án là giúp người dùng có thể tìm bài nhanh, thêm bài mới, quản lý tập sách và xem bài theo từng tập một cách đơn giản.
+
+## Dự án đang làm được gì
+
+- Đăng nhập bằng tài khoản nội bộ.
+- Tra cứu bài hát theo tên hoặc câu đầu (hỗ trợ có dấu/không dấu).
+- Thêm bài hát mới.
 - Xem danh sách bài hát.
-- Thêm tập sách và xem bài hát theo từng tập.
+- Thêm tập sách mới.
+- Bấm vào tập sách để xem các bài thuộc tập đó.
 
-## Stack và cấu trúc
+## Luồng demo gợi ý (3-5 phút)
 
-- `frontend/`: React + Vite + React Router + Ant Design.
-- `backend/`: Python + FastAPI.
-- Data source: **NocoDB Cloud (bắt buộc, không có mock adapter)**.
+1. Đăng nhập bằng tài khoản nội bộ được cấp.
+2. Vào màn hình `Tra cứu & thêm`, thử tìm một bài hát.
+3. Thêm một tập sách mới ở màn hình `Tập sách`.
+4. Quay lại màn hình `Tra cứu & thêm` để thêm một bài mới vào tập vừa tạo.
+5. Vào màn hình `Bài hát` để lọc và kiểm tra lại dữ liệu.
+
+## Tài khoản đăng nhập
+
+- Tài khoản được quản trị viên cấp riêng cho người dùng nội bộ.
+- Không công khai username/password trong tài liệu dự án.
+
+## Cấu trúc chính của repo
 
 ```text
-DemoGiaPhuocChoir/
-  frontend/
-  backend/
-  DEMO_MVP_TASKLIST.md
+frontend/  -> giao diện người dùng
+backend/   -> API trung gian đọc/ghi dữ liệu
 ```
 
-## 1) Chạy backend local
+## Chạy nhanh dự án (local)
+
+### 1) Chạy backend
 
 ```bash
 cd backend
@@ -30,15 +45,7 @@ copy .env.example .env
 uvicorn app:app --reload --host 127.0.0.1 --port 8000
 ```
 
-API health check:
-
-```bash
-GET http://127.0.0.1:8000/api/health
-```
-
-Nếu thiếu cấu hình NocoDB, `/api/health` sẽ trả `status: degraded`, các API dữ liệu trả lỗi `503`.
-
-## 2) Chạy frontend local
+### 2) Chạy frontend
 
 ```bash
 cd frontend
@@ -47,110 +54,20 @@ copy .env.example .env
 npm run dev
 ```
 
-Frontend mặc định chạy ở:
+Mở trình duyệt tại: `http://127.0.0.1:5173`
 
-- `http://127.0.0.1:5173`
+## Ghi chú dữ liệu
 
-## Demo account
+- Demo dùng dữ liệu thật từ NocoDB (không dùng mock data).
+- Nếu app mở được nhưng không thấy dữ liệu, thường là do thiếu cấu hình `.env` hoặc token/kết nối dữ liệu chưa đúng.
 
-- Username: `demo`
-- Password: `demo123`
+## Ghi chú cho quản trị viên
 
-## Route chính
+- Nếu cần thêm tài khoản đăng nhập hardcode, sửa danh sách `LOCAL_ACCOUNTS` trong file:
+  - `frontend/src/utils/auth.ts`
 
-- `/login`: đăng nhập demo.
-- `/`: Tra cứu & thêm bài hát.
-- `/songs`: Danh sách bài hát (chỉ xem).
-- `/song-books`: Thêm tập sách + xem bài trong tập.
+## Trạng thái hiện tại
 
-## API hiện có
-
-- `GET /api/health`
-- `GET /api/song-books`
-- `POST /api/song-books`
-- `GET /api/songs`
-- `POST /api/songs`
-
-### Schema chuẩn
-
-`SongBook`:
-
-```json
-{
-  "songBookId": "book-vong-01",
-  "name": "Thánh ca Mùa Vọng"
-}
-```
-
-`Song`:
-
-```json
-{
-  "title": "Xin Vâng",
-  "firstLine": "Xin vâng theo ý Chúa",
-  "author": "Lm. Kim Long",
-  "songBookId": "book-vong-01",
-  "pageNumber": 12,
-  "linkPdf": "https://..."
-}
-```
-
-## Cấu hình NocoDB
-
-Sửa `backend/.env`:
-
-```env
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-CORS_ALLOWED_ORIGIN_REGEX=^https://.*\.vercel\.app$
-NOCODB_BASE_URL=https://app.nocodb.com
-NOCODB_API_TOKEN=your_token
-NOCODB_SONGS_TABLE_ID=<songs_table_id>
-NOCODB_SONG_BOOKS_TABLE_ID=<song_books_table_id>
-```
-
-Hoặc dùng endpoint trực tiếp:
-
-```env
-NOCODB_SONGS_ENDPOINT=/api/v2/tables/<songs_table_id>/records
-NOCODB_SONG_BOOKS_ENDPOINT=/api/v2/tables/<song_books_table_id>/records
-```
-
-Lưu ý:
-
-- Không đặt NocoDB token ở frontend.
-- Backend chỉ chạy với NocoDB Cloud.
-- Nếu FE deploy trên Vercel nhưng không gọi được API (CORS), kiểm tra `CORS_ALLOWED_ORIGINS` và `CORS_ALLOWED_ORIGIN_REGEX` ở project backend.
-
-## Lệnh QA nhanh
-
-Frontend:
-
-```bash
-cd frontend
-npm run lint
-npm run build
-```
-
-Backend smoke test:
-
-```bash
-cd backend
-python - <<'PY'
-from fastapi.testclient import TestClient
-from app import app
-client = TestClient(app)
-print(client.get('/api/health').json())
-PY
-```
-
-## Deploy Vercel (2 project, cùng repo)
-
-1. Backend project:
-   - Root Directory: `backend/`
-   - Entrypoint: `app.py` với `app = FastAPI()`
-   - Env vars: `NOCODB_*`
-2. Frontend project:
-   - Root Directory: `frontend/`
-   - Build: `npm run build`
-   - Output: `dist`
-   - Env var: `VITE_API_BASE_URL=<backend_vercel_url>`
+- Core flow local đã chạy được.
+- Backend production đã trả dữ liệu thật.
+- Còn vài hạng mục kiểm tra cuối trước khi chốt bản demo hoàn chỉnh.
