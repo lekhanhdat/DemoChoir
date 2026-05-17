@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 @dataclass
 class Settings:
     cors_allowed_origins: list[str]
+    cors_allowed_origin_regex: str | None
     nocodb_base_url: str | None
     nocodb_api_token: str | None
     nocodb_songs_endpoint: str | None
@@ -30,9 +31,11 @@ def load_settings() -> Settings:
 
     raw_origins = _env("CORS_ALLOWED_ORIGINS") or "http://localhost:5173,http://127.0.0.1:5173"
     origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    cors_allowed_origin_regex = _env("CORS_ALLOWED_ORIGIN_REGEX") or r"^https://.*\.vercel\.app$"
 
     return Settings(
         cors_allowed_origins=origins,
+        cors_allowed_origin_regex=cors_allowed_origin_regex,
         nocodb_base_url=_env("NOCODB_BASE_URL"),
         nocodb_api_token=_env("NOCODB_API_TOKEN"),
         nocodb_songs_endpoint=_env("NOCODB_SONGS_ENDPOINT"),

@@ -85,12 +85,15 @@ class NocoDBDataAdapter:
     def list_songs(self) -> list[Song]:
         payload = self._request_json("GET", self._songs_endpoint)
         records = self._extract_records(payload)
+        valid_song_book_ids = {song_book.songBookId for song_book in self.list_song_books()}
         songs: list[Song] = []
         for record in records:
             try:
-                songs.append(self._to_song(record))
+                song = self._to_song(record)
             except RuntimeError:
                 continue
+            if song.songBookId in valid_song_book_ids:
+                songs.append(song)
         return songs
 
     def create_song(self, payload: SongCreateRequest) -> Song:

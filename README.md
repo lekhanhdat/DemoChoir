@@ -101,6 +101,7 @@ Sửa `backend/.env`:
 
 ```env
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+CORS_ALLOWED_ORIGIN_REGEX=^https://.*\.vercel\.app$
 NOCODB_BASE_URL=https://app.nocodb.com
 NOCODB_API_TOKEN=your_token
 NOCODB_SONGS_TABLE_ID=<songs_table_id>
@@ -118,6 +119,7 @@ Lưu ý:
 
 - Không đặt NocoDB token ở frontend.
 - Backend chỉ chạy với NocoDB Cloud.
+- Nếu FE deploy trên Vercel nhưng không gọi được API (CORS), kiểm tra `CORS_ALLOWED_ORIGINS` và `CORS_ALLOWED_ORIGIN_REGEX` ở project backend.
 
 ## Lệnh QA nhanh
 
